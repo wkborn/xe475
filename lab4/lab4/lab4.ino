@@ -1,10 +1,10 @@
 #include <Wire.h> // Reference the I2C Library
-#include <HMC5883L.h> // Reference the HMC5883L Compass Library
+#include "HMC5883L.h" // Reference the HMC5883L Compass Library
 HMC5883L compass; // Store our compass as a variable.
 
 unsigned long lastTime = millis(); //Initialize variable that represents the time after a reading successfully completes
 unsigned long currentTime = millis(); //Initialize variable that represents the current time
-unsigned long loopRate = 66; //Default bandwidth for the HMC5883L. If currentTime-lastTime>loopRate, sample magnetometer
+unsigned long loopRate = 132; //Default bandwidth for the HMC5883L. If currentTime-lastTime>loopRate, sample magnetometer
 float headingLast;
 int beenPressed = 0;
 const int buttonPin = 7;
@@ -12,8 +12,8 @@ int buttonState = 0;
 int error = 0; // Record any errors that may occur in the compass.
 float initialHeading = 8; //Make a value greater than 2*Pi
 float Integral = 0;
-float Kp = .6;
-float Kd = 1.5;
+float Kp = .9;
+float Kd = .5;
 float Ki = .2;
 float Last = 0;
 
@@ -102,16 +102,21 @@ void loop() {
     float Actual = heading;
     float SetPt=initialHeading;
     float Error = SetPt - Actual;
-    //if (0.05<abs(Error)<0.5){
+    if (Error<.3 && Error > -.3){
+      Integral=0;
+    }else if (Error<1 && Error > -1){
       Integral = Integral+Error;
-    /*}
+    }
     else {
-      //Integral=0;
-    }*/
+      Integral=0;
+    }
     float P=Error*Kp;
     float I=Integral*Ki;
     float D=(Last-Actual)*Kd;
     float Drive = P+I+D;
+    if (Error<.3 && Error>-0.3){
+      Drive=0;
+    }
     Drive=Drive*75;
     if (Drive<0){
       digitalWrite(DIRA, REVERSE);
@@ -127,10 +132,10 @@ void loop() {
     }
     analogWrite(PWMA,Drive);
     Last = Actual;
-    //Serial.print("Error is: ");
-    //Serial.println(Error);
-    //Serial.print("Integral is: ");
+    Serial.print("Error is:    ");
     Serial.println(Error);
+    Serial.print("Integral is: ");
+    Serial.println(Integral);
     //Serial.println(currentTime-lastTime)
     } 
   }
